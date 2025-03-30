@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const cron = require("node-cron");
-const emailjs = require("@emailjs/nodejs");
+const emailjs = require("emailjs-com");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
