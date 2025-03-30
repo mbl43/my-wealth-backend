@@ -16,8 +16,11 @@ let latestInvestmentData = null;
 
 // API Endpoint to Receive Investment Data
 app.post("/update-investment", (req, res) => {
-    if (!req.body || !req.body.investments) {
-        return res.status(400).json({ message: "Invalid investment data" });
+    const { name, email, investments } = req.body;
+
+    // Validate required fields
+    if (!name || !email || !investments || typeof investments !== "object") {
+        return res.status(400).json({ message: "Invalid investment data. Required: name, email, investments." });
     }
 
     latestInvestmentData = req.body;
