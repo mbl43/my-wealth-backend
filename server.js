@@ -3,52 +3,52 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const cron = require("node-cron");
-const emailjs = require("emailjs-com");
+const emailjs = require("@emailjs/nodejs");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors()); // Allows frontend to communicate with backend
-app.use(bodyParser.json()); // Parses JSON data from frontend
+app.use(cors());
+app.use(bodyParser.json());
 
-let latestInvestmentData = null; // Store the latest investment data
+let latestInvestmentData = null;
 
-// API Endpoint to Receive Investment Data from Frontend
+// API Endpoint to Receive Investment Data
 app.post("/update-investment", (req, res) => {
-  latestInvestmentData = req.body; // Store received data
-
-  if (!latestInvestmentData) {
-    return res.status(400).json({ message: "No data received" });
+  if (!req.body || !req.body.investments) {
+    return res.status(400).json({ message: "Invalid investment data" });
   }
 
+  latestInvestmentData = req.body;
   console.log("Received investment data:", latestInvestmentData);
+
   res.status(200).json({ message: "Investment data updated successfully" });
 });
 
-// Function to Send Notification Using Stored Data
+// Function to Send Notification Using EmailJS
 const sendNotification = async () => {
   if (!latestInvestmentData) {
     console.log("No investment data available. Skipping email.");
     return;
   }
 
-  const { name,email, investments } = latestInvestmentData;
+  const { name, email, investments } = latestInvestmentData;
 
   const templateParams = {
-    nominator_name: "Your Name",
     user_name: name,
-    user_email:email,
-    totalInvestment: Object.values(investments).reduce((a, b) => a + b, 0).toLocaleString("en-IN"),
-    gold: investments.Gold.toLocaleString("en-IN"),
-    silver: investments.Silver.toLocaleString("en-IN"),
-    ppf: investments.ppf_value.toLocaleString("en-IN"),
-    fd: investments.fd_value.toLocaleString("en-IN"),
-    mutual_fund: investments.mutual_fund.toLocaleString("en-IN"),
-    stocks_value: investments.stocks_value.toLocaleString("en-IN"),
+    user_email: email,
+    totalInvestment: Object.values(investments).reduce((a, b) => a + (b || 0), 0).toLocaleString("en-IN"),
+    gold: (investments.Gold || 0).toLocaleString("en-IN"),
+    silver: (investments.Silver || 0).toLocaleString("en-IN"),
+    ppf: (investments.ppf_value || 0).toLocaleString("en-IN"),
+    fd: (investments.fd_value || 0).toLocaleString("en-IN"),
+    mutual_fund: (investments.mutual_fund || 0).toLocaleString("en-IN"),
+    stocks_value: (investments.stocks_value || 0).toLocaleString("en-IN"),
     transaction_date: new Date().toLocaleDateString("en-IN"),
   };
-console.table(templateParams);
+
+  console.table(templateParams);
 
   try {
     await emailjs.send(
@@ -57,7 +57,7 @@ console.table(templateParams);
       templateParams,
       process.env.EMAILJS_PUBLIC_KEY
     );
-    console.log("Investment summary sent to nominee!");
+    console.log("Investment summary sent successfully!");
   } catch (error) {
     console.error("Error sending email:", error);
   }
